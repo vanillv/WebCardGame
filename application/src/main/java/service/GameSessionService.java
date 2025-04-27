@@ -1,13 +1,16 @@
 package service;
 
+import lombok.AllArgsConstructor;
 import model.card.Card;
 import model.card.PointsCard;
 import model.dto.ActionCardUseDto;
 import model.entity.Session;
+import model.entity.Turn;
 import model.entity.User;
 import model.entity.UserSessionInstance;
 import org.springframework.stereotype.Service;
 import repository.SessionRepository;
+import repository.TurnRepository;
 import repository.UserRepository;
 import repository.UserSessionInstanceRepository;
 import utils.ActionCardHandler;
@@ -17,12 +20,14 @@ import java.util.Random;
 
 
 @Service
+@AllArgsConstructor
 public class GameSessionService {
     private SessionRepository sessionRepo;
     private UserRepository userRepo;
+    private TurnRepository turnRepo;
     private UserSessionInstanceRepository userInstanceRepo;
-    private ActionCardHandler actionCardHandler = new ActionCardHandler();
-    private DeckCreator deckCreator = new DeckCreator();
+    private ActionCardHandler actionCardHandler;
+    private DeckCreator deckCreator;
     public Long initSession(long hostId) {
           User host = userRepo.getReferenceById(hostId);
           Session session = new Session();
@@ -61,22 +66,28 @@ public class GameSessionService {
             Session session = getSession(dto.getSessionId());
             Card card = session.addTurn(dto.getCardOwnerId());
             UserSessionInstance player = userInstanceRepo.getReferenceById(dto.getCardOwnerId());
-            int value = card.getValue();
-            if (card instanceof PointsCard) {
-                player.setPoints(player.getPoints() + value);
-                session.getTurns().getLast().cardActivate(player);
+            if (card != null) {
+                int value = card.getValue();
+                Turn thisTurn =  session.getTurns().getLast();
+                if (card instanceof PointsCard) {
+                    player.setPoints(player.getPoints() + value);
+                    thisTurn.cardActivate(player);
+                    turnRepo.saveAndFlush(thisTurn);
+                    return true;
+                }
+                UserSessionInstance target = userInstanceRepo.getReferenceById(dto.getTargetId());
+                switch (value) {
+                    case 1 -> actionCardHandler.applyBlock(target);
+                    case 2 -> actionCardHandler.applyDouble(player);
+                    case 3 -> actionCardHandler.applySteal(player, target, 3);
+                    case 5 -> actionCardHandler.applySwap(player, target);
+                    case 10 -> actionCardHandler.applyDefense(player);
+                }
+                thisTurn.cardActivate(player);
+                turnRepo.saveAndFlush(thisTurn);
                 return true;
             }
-            UserSessionInstance target = userInstanceRepo.getReferenceById(dto.getTargetId());
-            switch (value) {
-                case 1 -> actionCardHandler.applyBlock(target);
-                case 2 -> actionCardHandler.applyDouble(player);
-                case 3 -> actionCardHandler.applySteal(player, target, 3);
-                case 5 -> actionCardHandler.applySwap(player, target);
-                case 10 -> actionCardHandler.applyDefense(player);
-            }
-            session.getTurns().getLast().cardActivate(player);
-            return true;
+            return false;
         }catch (Exception e) {
             return false;
         }

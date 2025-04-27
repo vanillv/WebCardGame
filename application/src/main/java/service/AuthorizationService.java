@@ -1,5 +1,6 @@
 package service;
 
+import lombok.AllArgsConstructor;
 import model.entity.User;
 import model.entity.UserAuthSecret;
 import org.springframework.stereotype.Service;
@@ -8,10 +9,11 @@ import repository.UserRepository;
 import utils.AuthSecretProvider;
 
 @Service
+@AllArgsConstructor
 public class AuthorizationService {
     UserRepository userRepo;
     UserAuthSecretRepository authSecretRepo;
-    AuthSecretProvider authSecretProvider = new AuthSecretProvider();
+    AuthSecretProvider authSecretProvider;
     public UserAuthSecret authorizeWithPassword(String login, String password) {
         User user = userRepo.findBy("login and password");
         return updateSecret(user);;

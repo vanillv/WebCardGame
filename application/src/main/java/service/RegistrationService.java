@@ -1,5 +1,6 @@
 package service;
 
+import lombok.AllArgsConstructor;
 import model.dto.UserRegistrationDto;
 import model.entity.User;
 import org.springframework.stereotype.Service;
@@ -8,10 +9,11 @@ import repository.UserRepository;
 import utils.AuthSecretProvider;
 
 @Service
+@AllArgsConstructor
 public class RegistrationService {
     UserRepository userRepo;
     UserAuthSecretRepository authSecretRepo;
-    AuthSecretProvider secretProvider = new AuthSecretProvider();
+    AuthSecretProvider secretProvider;
     public void registerNewUser(UserRegistrationDto dto){
         User user = new User();
         user.setName(dto.getName());

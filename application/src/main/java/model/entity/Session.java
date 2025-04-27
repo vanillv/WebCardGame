@@ -2,7 +2,6 @@ package model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import model.Turn;
 import model.card.Card;
 import model.card.PointsCard;
 import model.enums.PlayerStatus;
@@ -22,13 +21,14 @@ public class Session {
     private List<Card> deck = new ArrayList<>();
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserSessionInstance> playerList;
-    private List<Turn> turns;
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("timestamp ASC")
+    private List<Turn> turns = new ArrayList<>();
+
     private List<UserSessionInstance> playerTurnOrder;
     private int currPlayerIndex = 0;
     @Column
     private SessionStatus status;
-    @Column
-    private String turnArchive;
     @Column
     private boolean available;
     private int cardOrder = 63;
@@ -60,6 +60,7 @@ public class Session {
                         nextTurn();
                         return card;
                     };
+                    return null;
                 }
                 case Blocked ->{
                     turns.add(new Turn(currPlayer));
@@ -109,12 +110,5 @@ public class Session {
     }
     public void nextTurn() {
        currPlayerIndex = (currPlayerIndex + 1) % playerTurnOrder.size();
-    }
-    public String getPlayerList() {
-        String result = "players:";
-        for (UserSessionInstance p : playerList) {
-            result = result + p.getName() + ",";
-        }
-        return result + ";";
     }
 }
