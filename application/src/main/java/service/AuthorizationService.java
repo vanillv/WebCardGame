@@ -32,9 +32,9 @@ public class AuthorizationService {
         return updateSecret(authSecret.getUser());
     }
 
-    private UserAuthSecret updateSecret(User user) {
+    public UserAuthSecret updateSecret(User user) {
         UserAuthSecret newSecret = authSecretProvider.updateSecret(user);
-        authSecretRepo.save(newSecret);
+        authSecretRepo.saveAndFlush(newSecret);
         return newSecret;
     }
 }

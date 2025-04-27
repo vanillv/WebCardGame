@@ -3,7 +3,6 @@ package model.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import model.card.Card;
-import model.card.PointsCard;
 import model.enums.PlayerStatus;
 import model.enums.SessionStatus;
 
@@ -13,11 +12,10 @@ import java.util.random.RandomGenerator;
 @Entity
 @Table
 @Data
-
 public class Session {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long sessionId;
+    private long id;
     @OneToMany(cascade = CascadeType.ALL)
     private List<Card> deck = new ArrayList<>();
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -34,7 +32,7 @@ public class Session {
     private boolean available;
     private int cardOrder = 63;
     public Session() {
-        sessionId = RandomGenerator.getDefault().nextInt(100000, 10000000);
+        id = RandomGenerator.getDefault().nextInt(100000, 10000000);
         status = SessionStatus.WaitForPlayers;
         playerList = new ArrayList<>();
         turns = new ArrayList<>();
@@ -48,36 +46,6 @@ public class Session {
     }
     public void deletePlayer(User player) {
         playerList.removeIf(u -> u.getUser().equals(player));
-    }
-    public Card addTurn(long playerId) {
-        if (playerTurnOrder.get(currPlayerIndex).getUser().getId() == playerId) {
-            UserSessionInstance currPlayer = playerTurnOrder.get(currPlayerIndex);
-            switch (playerTurnOrder.get(currPlayerIndex).getStatus()) {
-                case Waiting -> {return null;}
-                case Slowed -> {
-                    Card card = drawCard();
-                    if (card instanceof PointsCard) {
-                        turns.add(new Turn(currPlayer, card));
-                        nextTurn(currPlayer);
-                        return card;
-                    };
-                    return null;
-                }
-                case Blocked ->{
-                    turns.add(new Turn(currPlayer));
-                    nextTurn(currPlayer);
-                    return null;
-                }
-                default -> {
-                    Card card = drawCard();
-                    turns.add(new Turn(currPlayer, card));
-                    nextTurn(currPlayer);
-                    return card;
-                }
-            }
-
-        }
-        return null;
     }
     public boolean startGame(long hostId) {
         if (playerList.size() > 1 && available && playerList.getFirst().getUser().getId() != hostId) {
@@ -112,9 +80,21 @@ public class Session {
        currPlayerIndex = (currPlayerIndex + 1) % playerTurnOrder.size();
        int statusDuration = currPlayer.getStatusDuration();
        if (statusDuration > 0) {
-           statusDuration--;
+           currPlayer.setStatusDuration(statusDuration - 1);
        } else {
            currPlayer.setStatus(PlayerStatus.Playing);
        }
+    }
+    public UserSessionInstance getCurrentPlayer() {
+        return playerTurnOrder.get(currPlayerIndex);
+    }
+    public Card processPlayerTurn(Long playerId) {
+        UserSessionInstance player = getCurrentPlayer();
+        if (!player.getUser().getId().equals(playerId)) return null;
+        Card card = drawCard();
+        Turn turn = new Turn(player, card);
+        turns.add(turn);
+        nextTurn(player);
+        return card;
     }
 }

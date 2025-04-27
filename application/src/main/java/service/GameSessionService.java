@@ -4,11 +4,14 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import model.card.Card;
 import model.card.PointsCard;
-import model.dto.ActionCardUseDto;
+import model.dto.request.TurnRequestDto;
+import model.dto.result.PlayerInfoDto;
+import model.dto.result.SessionInfoResultDto;
+import model.dto.result.TurnResultDto;
 import model.entity.Session;
-import model.entity.Turn;
 import model.entity.User;
 import model.entity.UserSessionInstance;
+import model.enums.SessionStatus;
 import org.springframework.stereotype.Service;
 import repository.SessionRepository;
 import repository.TurnRepository;
@@ -17,7 +20,9 @@ import repository.UserSessionInstanceRepository;
 import utils.ActionCardHandler;
 import utils.DeckCreator;
 
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -63,42 +68,82 @@ public class GameSessionService {
             return false;
         }
     }
-    public boolean useTurn(ActionCardUseDto dto) {
-        try {
-            Session session = getSession(dto.getSessionId());
-            Card card = session.addTurn(dto.getCardOwnerId());
-            UserSessionInstance player = userInstanceRepo.getReferenceById(dto.getCardOwnerId());
-            if (card != null) {
-                int value = card.getValue();
-                Turn thisTurn =  session.getTurns().getLast();
-                if (card instanceof PointsCard) {
-                    player.setPoints(player.getPoints() + value);
-                    thisTurn.cardActivate(player);
-                    turnRepo.saveAndFlush(thisTurn);
-                    return true;
-                }
-                UserSessionInstance target = getUserInstance(dto.getTargetId());
-                switch (value) {
-                    case 1 -> actionCardHandler.applyBlock(target);
-                    case 2 -> actionCardHandler.applyDouble(player);
-                    case 3 -> actionCardHandler.applySteal(player, target, 3);
-                    case 5 -> actionCardHandler.applySwap(player, target);
-                    case 10 -> actionCardHandler.applyDefense(player);
-                }
-                thisTurn.cardActivate(player);
-                turnRepo.saveAndFlush(thisTurn);
-                return true;
-            }
-            return false;
-        }catch (Exception e) {
-            return false;
+
+    public SessionInfoResultDto getSessionInfo(Long sessionId) {
+        Session session = getSession(sessionId);
+        return new SessionInfoResultDto(
+                session.getId(),
+                session.getPlayerTurnOrder().get(session.getCurrPlayerIndex()).getUser().getId(),
+                session.getPlayerList().stream()
+                        .map(p -> new PlayerInfoDto(
+                                p.getUser().getId(),
+                                p.getUser().getName(),
+                                p.getPoints(),
+                                p.getStatus()))
+                        .collect(Collectors.toList()),
+                session.getDeck().size(),
+                session.getStatus()
+        );
+    }
+    public TurnResultDto processTurn(TurnRequestDto dto) {
+        Session session = getSession(dto.getSessionId());
+        validateTurn(session, dto.getCardOwnerId());
+        Card drawnCard = session.processPlayerTurn(dto.getCardOwnerId());
+        if (drawnCard == null) {
+            return new TurnResultDto(false, "Invalid turn", null, null);
+        }
+        applyCardEffects(session, drawnCard, dto);
+        session = sessionRepo.saveAndFlush(session);
+        return buildTurnResult(session, drawnCard);
+    }
+    private void validateTurn(Session session, Long playerId) {
+        if (session.getStatus() == SessionStatus.Finished) {
+            throw new IllegalStateException("Game is already finished");
+        }
+        UserSessionInstance currentPlayer = session.getCurrentPlayer();
+        if (!currentPlayer.getUser().getId().equals(playerId)) {
+            throw new IllegalArgumentException("Not player's turn");
         }
     }
+    private void applyCardEffects(Session session, Card card, TurnRequestDto dto) {
+        UserSessionInstance player = getUserInstance(dto.getCardOwnerId());
+        if (card instanceof PointsCard) {
+            player.setPoints(player.getPoints() + card.getValue());
+            userInstanceRepo.saveAndFlush(player);
+            return;
+        }
+        UserSessionInstance target = getUserInstance(dto.getTargetId());
+        applyActionCard(card, player, target);
+    }
+    private void applyActionCard(Card card, UserSessionInstance player, UserSessionInstance target) {
+        switch (card.getValue()) {
+            case 1 -> actionCardHandler.applyBlock(target);
+            case 2 -> actionCardHandler.applyDouble(player);
+            case 3 -> actionCardHandler.applySteal(player, target, 3);
+            case 5 -> actionCardHandler.applySwap(player, target);
+            case 10 -> actionCardHandler.applyDefense(player);
+            default -> throw new IllegalArgumentException("Unknown card value");
+        }
+        userInstanceRepo.saveAllAndFlush(List.of(player, target));
+    }
+
+    private TurnResultDto buildTurnResult(Session session, Card card) {
+        return new TurnResultDto(
+                true,
+                "Card " + card.getName() + " applied",
+                session.getCurrentPlayer().getUser().getId(),
+                session.getPlayerTurnOrder().stream()
+                        .collect(Collectors.toMap(
+                                p -> p.getUser().getId(),
+                                UserSessionInstance::getPoints
+                        ))
+        );
+    }
     private User getUser(long userId) {
-        return userRepo.findById(userId).orElseThrow(()->new RuntimeException("UserNotFound"));
+        return userRepo.getReferenceById(userId);
     }
     private Session getSession(long sessionId) {
-        return sessionRepo.findById(sessionId).orElseThrow(()->new RuntimeException("SessionNotFound"));
+        return sessionRepo.getReferenceById(sessionId);
     }
     private UserSessionInstance getUserInstance(long userId) {
         return userInstanceRepo.findByUser_Id(userId)
