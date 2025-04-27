@@ -13,6 +13,7 @@ import java.util.random.RandomGenerator;
 @Entity
 @Table
 @Data
+
 public class Session {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,21 +58,20 @@ public class Session {
                     Card card = drawCard();
                     if (card instanceof PointsCard) {
                         turns.add(new Turn(currPlayer, card));
-                        nextTurn();
+                        nextTurn(currPlayer);
                         return card;
                     };
                     return null;
                 }
                 case Blocked ->{
                     turns.add(new Turn(currPlayer));
-                    nextTurn();
-                    currPlayer.setStatus(PlayerStatus.Playing);
+                    nextTurn(currPlayer);
                     return null;
                 }
                 default -> {
                     Card card = drawCard();
                     turns.add(new Turn(currPlayer, card));
-                    nextTurn();
+                    nextTurn(currPlayer);
                     return card;
                 }
             }
@@ -108,7 +108,13 @@ public class Session {
         }
         return false;
     }
-    public void nextTurn() {
+    public void nextTurn(UserSessionInstance currPlayer) {
        currPlayerIndex = (currPlayerIndex + 1) % playerTurnOrder.size();
+       int statusDuration = currPlayer.getStatusDuration();
+       if (statusDuration > 0) {
+           statusDuration--;
+       } else {
+           currPlayer.setStatus(PlayerStatus.Playing);
+       }
     }
 }

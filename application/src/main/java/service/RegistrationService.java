@@ -3,6 +3,7 @@ package service;
 import lombok.AllArgsConstructor;
 import model.dto.UserRegistrationDto;
 import model.entity.User;
+import model.entity.UserAuthSecret;
 import org.springframework.stereotype.Service;
 import repository.UserAuthSecretRepository;
 import repository.UserRepository;
@@ -19,7 +20,9 @@ public class RegistrationService {
         user.setName(dto.getName());
         user.setLogin(dto.getLogin());
         user.setPassword(dto.getPassword());
-        user.setSecretCode(secretProvider.updateSecret(user));
+        UserAuthSecret secret = secretProvider.updateSecret(user);
+        user.setSecretCode(secret);
         userRepo.saveAndFlush(user);
+        authSecretRepo.saveAndFlush(secret);
     }
 }

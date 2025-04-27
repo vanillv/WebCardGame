@@ -8,6 +8,8 @@ import repository.UserAuthSecretRepository;
 import repository.UserRepository;
 import utils.AuthSecretProvider;
 
+import java.time.LocalDateTime;
+
 @Service
 @AllArgsConstructor
 public class AuthorizationService {
@@ -15,16 +17,24 @@ public class AuthorizationService {
     UserAuthSecretRepository authSecretRepo;
     AuthSecretProvider authSecretProvider;
     public UserAuthSecret authorizeWithPassword(String login, String password) {
-        User user = userRepo.findBy("login and password");
-        return updateSecret(user);;
+        User user = userRepo.findByLogin(login)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getPassword().matches(password)) {
+            return updateSecret(user);
+        } else throw new RuntimeException("Wrong password");
+
     }
-    public UserAuthSecret authorizeWithSecret(String secret) {
-        //add findBySecret method into the UserAuthSecretRepo that returns User from the secret
-        User user = authSecretRepo.findBy("find by secret");
-        return updateSecret(user);
+    public UserAuthSecret authorizeWithSecret(String secret) throws RuntimeException {
+        UserAuthSecret authSecret = authSecretRepo.findBySecret(secret)
+                .filter(s -> s.getSecretCreationTime()
+                        .isAfter(LocalDateTime.now().minusHours(24)))
+                .orElseThrow(() -> new RuntimeException("Invalid or expired secret"));
+        return updateSecret(authSecret.getUser());
     }
+
     private UserAuthSecret updateSecret(User user) {
-        user.setSecretCode(authSecretProvider.updateSecret(user));
-        return user.getSecretCode();
+        UserAuthSecret newSecret = authSecretProvider.updateSecret(user);
+        authSecretRepo.save(newSecret);
+        return newSecret;
     }
 }

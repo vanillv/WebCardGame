@@ -1,5 +1,6 @@
 package service;
 
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import model.card.Card;
 import model.card.PointsCard;
@@ -21,6 +22,7 @@ import java.util.Random;
 
 @Service
 @AllArgsConstructor
+@Transactional
 public class GameSessionService {
     private SessionRepository sessionRepo;
     private UserRepository userRepo;
@@ -29,9 +31,9 @@ public class GameSessionService {
     private ActionCardHandler actionCardHandler;
     private DeckCreator deckCreator;
     public Long initSession(long hostId) {
-          User host = userRepo.getReferenceById(hostId);
+          User host = getUser(hostId);
           Session session = new Session();
-          long hostInstanceCode = new Random().nextLong(10000000, 10000000);
+          long hostInstanceCode = new Random().nextLong(1000000, 10000000);
           session.addPlayer(host);
           deckCreator.fillAndShuffleDeck(session);
           sessionRepo.saveAndFlush(session);
@@ -48,14 +50,14 @@ public class GameSessionService {
     }
     public boolean joinPlayer(long userId, long sessionId) {
         Session session = getSession(sessionId);
-        boolean addedPlayer = session.addPlayer(userRepo.getReferenceById(userId));
+        boolean addedPlayer = session.addPlayer(getUser(userId));
         sessionRepo.saveAndFlush(session);
         return addedPlayer;
     }
     public boolean playerLeave(long userId, long sessionId) {
         try {
             Session session = getSession(sessionId);
-            session.deletePlayer(userRepo.getReferenceById(userId));
+            session.deletePlayer(getUser(userId));
             return true;
         }catch (Exception e) {
             return false;
@@ -75,7 +77,7 @@ public class GameSessionService {
                     turnRepo.saveAndFlush(thisTurn);
                     return true;
                 }
-                UserSessionInstance target = userInstanceRepo.getReferenceById(dto.getTargetId());
+                UserSessionInstance target = getUserInstance(dto.getTargetId());
                 switch (value) {
                     case 1 -> actionCardHandler.applyBlock(target);
                     case 2 -> actionCardHandler.applyDouble(player);
@@ -92,7 +94,14 @@ public class GameSessionService {
             return false;
         }
     }
+    private User getUser(long userId) {
+        return userRepo.findById(userId).orElseThrow(()->new RuntimeException("UserNotFound"));
+    }
     private Session getSession(long sessionId) {
-        return sessionRepo.getReferenceById(sessionId);
+        return sessionRepo.findById(sessionId).orElseThrow(()->new RuntimeException("SessionNotFound"));
+    }
+    private UserSessionInstance getUserInstance(long userId) {
+        return userInstanceRepo.findByUser_Id(userId)
+                .orElseThrow(() -> new RuntimeException("UserInstanceNotFound"));
     }
 }
