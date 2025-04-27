@@ -4,5 +4,4 @@ public enum SessionStatus {
     WaitForPlayers,
     InProgress,
     Finished
-
 }

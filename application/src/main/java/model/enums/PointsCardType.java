@@ -8,4 +8,7 @@ public enum PointsCardType {
     PointsCardType(int value) {
         points = value;
     }
+    public int getPoints() {
+        return points;
+    }
 }

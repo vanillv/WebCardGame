@@ -1,9 +1,16 @@
 package model.card;
 
-import model.entity.User;
+import jakarta.persistence.*;
+import lombok.Data;
 
-public interface Card {
-    String name = "";
-    public int value = 0;
-    default void action(User player) {}
+@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "card_type")
+@Data
+public abstract class Card {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    private int value;
 }

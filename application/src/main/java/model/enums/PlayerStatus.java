@@ -1,7 +1,9 @@
 package model.enums;
 
 public enum PlayerStatus {
-    Normal,
+    Waiting,
+    Playing,
     Blocked,
-    Slowed
+    Slowed,
+    Defended
 }

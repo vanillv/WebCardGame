@@ -1,9 +1,10 @@
 package repository;
 
-import model.entity.Session;
+import model.entity.UserSessionInstance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SessionRepository extends JpaRepository<Session, Long> {
+public interface UserSessionInstanceRepository extends JpaRepository<UserSessionInstance, Long> {
+
 }

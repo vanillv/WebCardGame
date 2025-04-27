@@ -1,17 +1,16 @@
 package model.card;
 
-import model.entity.User;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import lombok.Data;
 import model.enums.ActionType;
-
-public class ActionCard implements Card {
-    public ActionType type;
-    public int value;
-    @Override
-    public void action(User target) {
-        switch (type) {
-            case Block -> value = 1;
-            case Slow -> value = 0;
-        }
-        //Card.super.action(player);
+@Entity
+@DiscriminatorValue("ACTION")
+@Data
+public class ActionCard extends Card {
+    private ActionType type;
+    private int value = type.getValue();
+    public ActionCard(ActionType type) {
+        this.type = type;
     }
 }

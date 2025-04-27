@@ -1,0 +1,87 @@
+package service;
+
+import model.card.Card;
+import model.card.PointsCard;
+import model.dto.ActionCardUseDto;
+import model.entity.Session;
+import model.entity.User;
+import model.entity.UserSessionInstance;
+import org.springframework.stereotype.Service;
+import repository.SessionRepository;
+import repository.UserRepository;
+import repository.UserSessionInstanceRepository;
+import utils.ActionCardHandler;
+import utils.DeckCreator;
+
+import java.util.Random;
+
+
+@Service
+public class GameSessionService {
+    private SessionRepository sessionRepo;
+    private UserRepository userRepo;
+    private UserSessionInstanceRepository userInstanceRepo;
+    private ActionCardHandler actionCardHandler = new ActionCardHandler();
+    private DeckCreator deckCreator = new DeckCreator();
+    public Long initSession(long hostId) {
+          User host = userRepo.getReferenceById(hostId);
+          Session session = new Session();
+          long hostInstanceCode = new Random().nextLong(10000000, 10000000);
+          session.addPlayer(host);
+          deckCreator.fillAndShuffleDeck(session);
+          sessionRepo.saveAndFlush(session);
+          return hostInstanceCode;
+    }
+    public boolean startSession(long hostId, long sessionId) {
+        return getSession(sessionId).startGame(hostId);
+    }
+    public boolean endSession(long sessionId, long hostId) {
+        Session session = getSession(sessionId);
+        boolean ended = session.gameEnd(hostId, false);
+        sessionRepo.saveAndFlush(session);
+        return ended;
+    }
+    public boolean joinPlayer(long userId, long sessionId) {
+        Session session = getSession(sessionId);
+        boolean addedPlayer = session.addPlayer(userRepo.getReferenceById(userId));
+        sessionRepo.saveAndFlush(session);
+        return addedPlayer;
+    }
+    public boolean playerLeave(long userId, long sessionId) {
+        try {
+            Session session = getSession(sessionId);
+            session.deletePlayer(userRepo.getReferenceById(userId));
+            return true;
+        }catch (Exception e) {
+            return false;
+        }
+    }
+    public boolean useTurn(ActionCardUseDto dto) {
+        try {
+            Session session = getSession(dto.getSessionId());
+            Card card = session.addTurn(dto.getCardOwnerId());
+            UserSessionInstance player = userInstanceRepo.getReferenceById(dto.getCardOwnerId());
+            int value = card.getValue();
+            if (card instanceof PointsCard) {
+                player.setPoints(player.getPoints() + value);
+                session.getTurns().getLast().cardActivate(player);
+                return true;
+            }
+            UserSessionInstance target = userInstanceRepo.getReferenceById(dto.getTargetId());
+            switch (value) {
+                case 1 -> actionCardHandler.applyBlock(target);
+                case 2 -> actionCardHandler.applyDouble(player);
+                case 3 -> actionCardHandler.applySteal(player, target, 3);
+                case 5 -> actionCardHandler.applySwap(player, target);
+                case 10 -> actionCardHandler.applyDefense(player);
+            }
+            session.getTurns().getLast().cardActivate(player);
+            return true;
+        }catch (Exception e) {
+            return false;
+        }
+    }
+    private Session getSession(long sessionId) {
+        return sessionRepo.getReferenceById(sessionId);
+    }
+}
