@@ -117,6 +117,7 @@ public class GameSessionService {
     }
     private void applyActionCard(Card card, UserSessionInstance player, UserSessionInstance target) {
         switch (card.getValue()) {
+            case 0 -> actionCardHandler.applySlowEffect(target);
             case 1 -> actionCardHandler.applyBlock(target);
             case 2 -> actionCardHandler.applyDouble(player);
             case 3 -> actionCardHandler.applySteal(player, target, 3);
