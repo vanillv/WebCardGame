@@ -2,12 +2,14 @@ package model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Data
 @Table
+@NoArgsConstructor
 public class UserAuthSecret {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

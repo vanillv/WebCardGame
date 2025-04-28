@@ -2,7 +2,7 @@ package model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import model.card.Card;
+import model.entity.card.Card;
 import model.enums.PlayerStatus;
 import model.enums.SessionStatus;
 
@@ -40,7 +40,7 @@ public class Session {
     }
     public boolean addPlayer(User player) {
         if (playerList.size() < 4 || !available) return false;
-        UserSessionInstance playerInstance = new UserSessionInstance(player, player.getName(), this, 0, PlayerStatus.Waiting, 0);
+        UserSessionInstance playerInstance = new UserSessionInstance(player, player.getName(), this, PlayerStatus.Waiting);
         playerList.add(playerInstance);
         return true;
     }
@@ -88,13 +88,13 @@ public class Session {
     public UserSessionInstance getCurrentPlayer() {
         return playerTurnOrder.get(currPlayerIndex);
     }
-    public Card processPlayerTurn(Long playerId) {
+    public Turn processPlayerTurn(Long playerId) {
         UserSessionInstance player = getCurrentPlayer();
         if (!player.getUser().getId().equals(playerId)) return null;
         Card card = drawCard();
         Turn turn = new Turn(player, card);
         turns.add(turn);
         nextTurn(player);
-        return card;
+        return turn;
     }
 }

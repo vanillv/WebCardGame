@@ -2,13 +2,14 @@ package service;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
-import model.card.Card;
-import model.card.PointsCard;
+import model.entity.card.Card;
+import model.entity.card.PointsCard;
 import model.dto.request.TurnRequestDto;
 import model.dto.result.PlayerInfoDto;
 import model.dto.result.SessionInfoResultDto;
 import model.dto.result.TurnResultDto;
 import model.entity.Session;
+import model.entity.Turn;
 import model.entity.User;
 import model.entity.UserSessionInstance;
 import model.enums.SessionStatus;
@@ -88,11 +89,14 @@ public class GameSessionService {
     public TurnResultDto processTurn(TurnRequestDto dto) {
         Session session = getSession(dto.getSessionId());
         validateTurn(session, dto.getCardOwnerId());
-        Card drawnCard = session.processPlayerTurn(dto.getCardOwnerId());
+        Turn turn = session.processPlayerTurn(dto.getCardOwnerId());
+        Card drawnCard = turn.getCard();
         if (drawnCard == null) {
             return new TurnResultDto(false, "Invalid turn", null, null);
         }
         applyCardEffects(session, drawnCard, dto);
+        turn.cardActivate(getUserInstance(dto.getTargetId()));
+        turnRepo.saveAndFlush(turn);
         session = sessionRepo.saveAndFlush(session);
         return buildTurnResult(session, drawnCard);
     }

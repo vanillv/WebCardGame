@@ -1,8 +1,8 @@
 package utils;
 
-import model.card.ActionCard;
-import model.card.Card;
-import model.card.PointsCard;
+import model.entity.card.ActionCard;
+import model.entity.card.Card;
+import model.entity.card.PointsCard;
 import model.entity.Session;
 import model.enums.ActionType;
 import model.enums.PointsCardType;

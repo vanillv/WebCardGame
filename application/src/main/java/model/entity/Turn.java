@@ -2,13 +2,15 @@ package model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import model.card.Card;
+import lombok.NoArgsConstructor;
+import model.entity.card.Card;
 import model.enums.TurnStatus;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Data
+@NoArgsConstructor
 public class Turn {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
