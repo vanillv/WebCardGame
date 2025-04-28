@@ -8,7 +8,6 @@ import model.enums.SessionStatus;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.random.RandomGenerator;
 @Entity
 @Table
 @Data
@@ -32,7 +31,6 @@ public class Session {
     private boolean available;
     private int cardOrder = 63;
     public Session() {
-        id = RandomGenerator.getDefault().nextInt(100000, 10000000);
         status = SessionStatus.WaitForPlayers;
         playerList = new ArrayList<>();
         turns = new ArrayList<>();
