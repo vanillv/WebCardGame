@@ -1,41 +1,45 @@
+import WebCardGame.application.Application;
+import model.entity.Session;
 import model.entity.User;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.context.annotation.Import;
 import repository.SessionRepository;
-import repository.TurnRepository;
 import repository.UserRepository;
 import service.GameSessionService;
+import utils.ActionCardHandler;
+import utils.DeckCreator;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@ExtendWith({MockitoExtension.class, SpringExtension.class})
-@SpringBootTest
-@AutoConfigureMockMvc
+@SpringBootTest(classes = Application.class)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import({GameSessionService.class, DeckCreator.class, ActionCardHandler.class})
 class GameSessionServiceIntegrationTest {
-    @InjectMocks
-    GameSessionService service;
-    @Mock
-    UserRepository userRepo;
-    @Mock
-    SessionRepository sessionRepo;
-    @Mock
-    TurnRepository turnRepo;
+
+    @Autowired
+    private UserRepository userRepo;
+
+    @Autowired
+    private SessionRepository sessionRepo;
+
+    @Autowired
+    private GameSessionService service;
+
     @Test
     void shouldCreateNewSessionWithHost() {
         User host = new User();
-        host.setId(1L);
-        when(userRepo.saveAndFlush(any(User.class))).thenReturn(host);
-        when(userRepo.existsByLogin(anyString())).thenReturn(true);
-        Long sessionCode = service.initSession(host.getId());
-        Assertions.assertNotNull(sessionCode);
+        host.setLogin("host");
+        host.setName("hostName");
+        userRepo.save(host);
+        Long sessionId = service.initSession(host.getId());
+        assertNotNull(sessionId);
+        Session session = sessionRepo.findById(sessionId)
+                .orElseThrow();
+        assertEquals(1, session.getPlayerList().size());
+        assertEquals(host.getId(), session.getPlayerList().get(0).getUser().getId());
     }
 }
