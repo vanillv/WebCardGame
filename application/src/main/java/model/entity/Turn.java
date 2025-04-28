@@ -15,28 +15,21 @@ public class Turn {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id")
     private Session session;
-
     @ManyToOne
     @JoinColumn(name = "player_id")
     private UserSessionInstance player;
-
     @ManyToOne
     @JoinColumn(name = "target_player_id")
     private UserSessionInstance target;
-
     @Enumerated(EnumType.STRING)
     private TurnStatus status;
-
     @ManyToOne
     @JoinColumn(name = "card_id")
     private Card card;
-
     private LocalDateTime timestamp = LocalDateTime.now();
-
     public boolean isWinner() {
         return player.getPoints() >= 30;
     }

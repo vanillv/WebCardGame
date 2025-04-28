@@ -1,4 +1,3 @@
-import WebCardGame.application.Application;
 import model.dto.request.UserRegistrationDto;
 import model.entity.User;
 import model.entity.UserAuthSecret;
@@ -7,7 +6,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import repository.UserAuthSecretRepository;
 import repository.UserRepository;
 import service.RegistrationService;
@@ -15,8 +16,9 @@ import utils.AuthSecretProvider;
 
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-@SpringBootTest(classes = Application.class)
+@ExtendWith({MockitoExtension.class, SpringExtension.class})
+@SpringBootTest
+@AutoConfigureMockMvc
 class RegistrationServiceTest {
 
     @Mock

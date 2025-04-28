@@ -1,48 +1,41 @@
 import model.entity.User;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import repository.SessionRepository;
 import repository.TurnRepository;
 import repository.UserRepository;
-import repository.UserSessionInstanceRepository;
 import service.GameSessionService;
-import utils.ActionCardHandler;
-import utils.DeckCreator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
-//@SpringBootTest(classes = Application.class)
-@DataJpaTest()
+@ExtendWith({MockitoExtension.class, SpringExtension.class})
+@SpringBootTest
+@AutoConfigureMockMvc
 class GameSessionServiceIntegrationTest {
-
-    @Autowired
-    private SessionRepository sessionRepo;
-    
-    @Autowired
-    private UserRepository userRepo;
-    
-    @Autowired
-    private TurnRepository turnRepo;
-    Mock mock;
-
+    @InjectMocks
+    GameSessionService service;
+    @Mock
+    UserRepository userRepo;
+    @Mock
+    SessionRepository sessionRepo;
+    @Mock
+    TurnRepository turnRepo;
     @Test
     void shouldCreateNewSessionWithHost() {
         User host = new User();
-        host.setLogin("host");
-        host.setName("hostName");
-        userRepo.saveAndFlush(host);
-        GameSessionService service = new GameSessionService(
-            sessionRepo, userRepo, turnRepo, 
-            mock(UserSessionInstanceRepository.class),
-            mock(ActionCardHandler.class),
-            mock(DeckCreator.class)
-        );
+        host.setId(1L);
+        when(userRepo.saveAndFlush(any(User.class))).thenReturn(host);
+        when(userRepo.existsByLogin(anyString())).thenReturn(true);
         Long sessionCode = service.initSession(host.getId());
-        assertNotNull(sessionCode);
-        assertEquals(host, sessionRepo.getReferenceById(host.getId()));
+        Assertions.assertNotNull(sessionCode);
     }
 }

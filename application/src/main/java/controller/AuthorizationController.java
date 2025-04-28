@@ -34,7 +34,7 @@ public class AuthorizationController {
             );
             return ResponseEntity.ok(mapToAuthDto(secret));
         } catch (RuntimeException ex) {
-            throw new RuntimeException(ex.getMessage());
+            return ResponseEntity.badRequest().body(new UserAuthResultDto("Error", (long) 0,"", LocalDateTime.now()));
         }
     }
     @PostMapping("/login/secret")
@@ -45,7 +45,7 @@ public class AuthorizationController {
             UserAuthSecret secret = authService.authorizeWithSecret(dto.getSecret());
             return ResponseEntity.ok(mapToAuthDto(secret));
         } catch (RuntimeException ex) {
-            throw new RuntimeException(ex.getMessage());
+            return ResponseEntity.badRequest().body(new UserAuthResultDto("Error", (long) 0,"", LocalDateTime.now()));
         }
     }
     private UserAuthResultDto mapToAuthDto(UserAuthSecret secret) {

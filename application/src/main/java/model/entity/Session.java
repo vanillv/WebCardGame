@@ -39,7 +39,7 @@ public class Session {
         available = true;
     }
     public boolean addPlayer(User player) {
-        if (playerList.size() < 4 || !available) return false;
+        if (!(playerList.size() < 4) || !available) return false;
         UserSessionInstance playerInstance = new UserSessionInstance(player, player.getName(), this, PlayerStatus.Waiting);
         playerList.add(playerInstance);
         return true;
